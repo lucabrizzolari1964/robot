@@ -121,7 +121,7 @@ def leggi_seriale():
         time.sleep_ms(10)
 
 # --- LOOP PRINCIPALE ---
-print("\n--- ROBOT PRONTO ---")
+print("\n--- MOTORI PRONTI ---")
 while True:
     try:
         # Per test automatico usa il comando sotto, altrimenti usa leggi_seriale()
