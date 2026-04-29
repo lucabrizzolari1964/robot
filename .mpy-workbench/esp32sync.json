@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "syncId": "dac1829a-f4fe-425f-aa39-2ca682cbe815",
+  "root": "/home/luca/micropython/motore",
+  "generatedAt": 1777474540528,
+  "files": {
+    "main.py": {
+      "size": 5480,
+      "mtime": 1777474537342
+    }
+  }
+}
