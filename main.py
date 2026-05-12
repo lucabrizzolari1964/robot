@@ -48,15 +48,16 @@ def pcf_write(val_16bit):
     buffer = bytearray([val_16bit & 0xFF, (val_16bit >> 8) & 0xFF])
     i2c.writeto(PCF_ADDR, buffer)
 
-def controllo_motori(dir_a, dir_b, velocita=900):
+def controllo_motori(dir_a, dir_b, velocita=900, passi=500):
     """
     dir: 0=fermo, 1=avanti, 2=indietro
     Mappatura accertata: 
     Motore A: P9 e P10
     Motore B: P8 e P11
     """
-    valore = 0xFFFF # Logica Inversa: 1 = OFF/Freno
-    
+    valore = 0xFF00 # Logica Inversa: 1 = OFF/Freno
+    global passi_a, passi_b
+
     # Motore A
     if dir_a == 1:       # Avanti
         valore &= ~(1 << 9)
@@ -69,6 +70,11 @@ def controllo_motori(dir_a, dir_b, velocita=900):
     elif dir_b == 2:     # Indietro
         valore &= ~(1 << 11)
 
+    dati = valore.to_bytes(2, 'big')
+    bit_string = ' '.join(f'{byte:08b}' for byte in dati)
+    print(f"Valore Byte: {dati}")
+    print(f"Valore Bit:  {bit_string}")
+
     # Applica i segnali di direzione
     pcf_write(valore)
     
@@ -77,37 +83,39 @@ def controllo_motori(dir_a, dir_b, velocita=900):
     duty_b = velocita if dir_b != 0 else 0
     pwm_a.duty(duty_a)
     pwm_b.duty(duty_b)
-
-def reset_passi():
-    global passi_a, passi_b
     passi_a = 0
     passi_b = 0
-
-# --- ESEMPIO DI TEST CON ENCODER ---
+    while passi_a < passi or passi_b < passi:
+        print("Passi A:", passi_a, "| Passi B:", passi_b, end="\r")
+        time.sleep_ms(10)
+    print("Fine Passi A:", passi_a, "| Passi B:", passi_b)
+    valore = 0xFF00
+    dati = valore.to_bytes(2, 'big')
+    bit_string = ' '.join(f'{byte:08b}' for byte in dati)
+    print(f"Valore Byte: {dati}")
+    print(f"Valore Bit:  {bit_string}")
+    pcf_write(valore)
+    pwm_a.duty(0)
+    pwm_b.duty(0)
+    print("Spenti i motori")
 
 try:
-    print("Test Encoder: Muovo avanti per 5000 passi")
-    reset_passi()
-    controllo_motori(1, 1, 800) # Avanti a velocità 800
+    passi=400
+    print("Test Rotazione: Passi impostati =", passi)
     
-    # Continua finché uno dei due motori non raggiunge 500 passi
-    while passi_a < 5000 and passi_b < 5000:
-        print("Passi A:", passi_a, "| Passi B:", passi_b, end="\r")
-        time.sleep_ms(10)
-    
-    print("Target raggiunto. Fermo tutto.")
-    controllo_motori(0, 0)
-    time.sleep(2)
-    
-    print("Test Rotazione: Indietro per 5000 passi")
-    reset_passi()
-    controllo_motori(2, 2, 800)
-    while passi_a < 5000 and passi_b < 5000:
-        print("Passi A:", passi_a, "| Passi B:", passi_b, end="\r")
-        time.sleep_ms(10)
-    time.sleep(2)
-    controllo_motori(0, 0)
+    print("Test Rotazione: Avanti A e Indietro B")
+    controllo_motori(1, 2, velocita=900, passi=passi)
 
+    print("Test Rotazione: Avanti B e Indietro A")
+    controllo_motori(2, 1, velocita=900, passi=passi)
+
+    print("Test Rotazione: Avanti A e Avanti B A")
+    controllo_motori(2, 2, velocita=900, passi=passi)
+
+    print("Test Rotazione: Indietro A e Indietro B")
+    controllo_motori(1, 1, velocita=900, passi=passi)
+
+   
 except KeyboardInterrupt:
     # Sicurezza: ferma i motori se premi Ctrl+C
     controllo_motori(0, 0)
